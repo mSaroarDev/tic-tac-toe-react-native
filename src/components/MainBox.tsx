@@ -80,11 +80,78 @@ const MainBox = () => {
     setOValues([]);
   };
 
+  const playerOAutoPlay = () => {
+    if (isGameOver || turn !== "o") return;
+
+    const allBlocks = Array.from({ length: 9 }, (_, i) => i);
+    const availableBlocks = allBlocks.filter((block) => !reservedBlocks.includes(block));
+    if (availableBlocks.length === 0) return;
+
+    const findWinningMove = (playerValues: number[]) => {
+      for (let combo of winningLogic) {
+        const availableInCombo = combo.filter((cell) => !playerValues.includes(cell));
+        if (availableInCombo.length === 1) {
+          const targetCell = availableInCombo[0];
+          if (availableBlocks.includes(targetCell)) {
+            return targetCell;
+          }
+        }
+      }
+      return null;
+    };
+
+    const winMove = findWinningMove(oValues);
+    if (winMove !== null) {
+      handleReserveBlock({ blockNumber: winMove, player: "o" });
+      return;
+    }
+
+    const blockMove = findWinningMove(xValues);
+    if (blockMove !== null) {
+      handleReserveBlock({ blockNumber: blockMove, player: "o" });
+      return;
+    }
+
+    const center = 4;
+    const corners = [0, 2, 6, 8];
+    const edges = [1, 3, 5, 7];
+
+    let strategicMove = null;
+
+    if (availableBlocks.includes(center)) {
+      strategicMove = center;
+    }
+    else {
+      const availableCorners = corners.filter((c) => availableBlocks.includes(c));
+      if (availableCorners.length > 0) {
+        strategicMove = availableCorners[Math.floor(Math.random() * availableCorners.length)];
+      } else {
+        const availableEdges = edges.filter((e) => availableBlocks.includes(e));
+        strategicMove = availableEdges[Math.floor(Math.random() * availableEdges.length)];
+      }
+    }
+
+    if (strategicMove !== null) {
+      handleReserveBlock({ blockNumber: strategicMove, player: "o" });
+      return;
+    }
+
+    const randomBlock = availableBlocks[Math.floor(Math.random() * availableBlocks.length)];
+    handleReserveBlock({ blockNumber: randomBlock, player: "o" });
+  };
+
+
   useEffect(() => {
+    if (turn === "o") {
+      setTimeout(() => {
+        playerOAutoPlay();
+      }, 1500);
+    }
+
     if (isOver) {
       setTimeout(() => {
         checkWinningPlayer();
-      }, 500);
+      }, 200);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [xValues, oValues]);
@@ -111,7 +178,7 @@ const MainBox = () => {
 
       <View style={styles.turn}>
         {/* eslint-disable-next-line react-native/no-inline-styles */}
-        <View style={{ backgroundColor: turn === "x" ? "purple" : "blue" }}>
+        <View style={{ backgroundColor: turn === "x" ? "red" : "purple" }}>
           <Text style={styles.turnLable}>Now, {turn} Turn</Text>
         </View>
       </View>
@@ -139,8 +206,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     borderBottomWidth: 0.5,
     borderColor: '#ccc',
-    borderRightColor: '#ccc',
-    borderRightWidth: 0.5,
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
